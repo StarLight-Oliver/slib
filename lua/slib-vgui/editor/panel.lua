@@ -14,8 +14,8 @@ function PANEL:Init()
 	search:SetTall(20)
 	search:DockMargin(0, 0, 0, 5)
 	search:SetPlaceholderText("Search")
-	search.OnChange = function(_)
-		self:Search(self:GetText())
+	search.OnChange = function(searchNew)
+		self:Search(searchNew:GetText())
 	end
 end
 
@@ -23,12 +23,16 @@ function PANEL:GetPanels()
 	return self.Panels or {}
 end
 
+function PANEL:GetScroll()
+	return self.scroll
+end
+
 function PANEL:Search(text)
 
 	local pnls = self:GetPanels()
 
 	for key, value in pairs(pnls) do
-		if string.find(key, str) then
+		if string.find(key, text) then
 			value:SetVisible(true)
 		else
 			value:SetVisible(false)
@@ -92,7 +96,7 @@ function PANEL:Rebuild()
 
 		local label = panel:Add("DLabel")
 		label:Dock(LEFT)
-		label:SetText(key .. " " ..  value.realm)
+		label:SetText(key)
 		label:SetWide(200)
 
 		if value.type == "boolean" then
@@ -179,17 +183,17 @@ function PANEL:Rebuild()
 
 			local baseSize = panel:GetTall()
 
-			label.OnChange = function(self)
-				if IsValid(self.label) then
-					self.label:Remove()
+			label.OnChange = function(pnl)
+				if IsValid(pnl.label) then
+					pnl.label:Remove()
 				end
 
 				local value
 
-				if string.StartWith(self:GetText(), "0x") then
-					value = tonumber(self:GetText(), 16)
+				if string.StartWith(pnl:GetText(), "0x") then
+					value = tonumber(pnl:GetText(), 16)
 				else
-					value = tonumber(self:GetText())
+					value = tonumber(pnl:GetText())
 				end
 
 				if not value then
@@ -199,27 +203,28 @@ function PANEL:Rebuild()
 					label:SetColor(Color(255,0,0))
 					label:SizeToContents()
 
-					self.label = label
+					pnl.label = label
 					panel:SetTall(baseSize + label:GetTall())
-					scroll:InvalidateChildren(true)
+					print(panel:GetTall(), "yoooo")
+					self.scroll:InvalidateChildren(true)
 
 					return
 				else
-					if IsValid(self.label) then
-						self.label:Remove()
+					if IsValid(pnl.label) then
+						pnl.label:Remove()
 					end
 					panel:SetTall(baseSize)
-					scroll:InvalidateChildren(true)
+					self.scroll:InvalidateChildren(true)
 				end
 			end
 
-			label.OnEnter = function(self)
+			label.OnEnter = function(label)
 				local value
 
-				if string.StartWith(self:GetText(), "0x") then
-					value = tonumber(self:GetText(), 16)
+				if string.StartWith(label:GetText(), "0x") then
+					value = tonumber(label:GetText(), 16)
 				else
-					value = tonumber(self:GetText())
+					value = tonumber(label:GetText())
 				end
 
 				if not value then
