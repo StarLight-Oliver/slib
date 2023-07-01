@@ -72,6 +72,25 @@ function PANEL:Paint()
 
 end
 
+function PANEL:GetDataAndChanges()
+
+	local newData = {}
+
+	local data = self:GetData()
+	local changes = self:GetChanges()
+
+	for key, value in pairs(data) do
+
+		newData[key] = value
+
+		if changes[key] then
+			newData[key].value = changes[key]
+		end
+	end
+
+	return newData
+end
+
 function PANEL:Rebuild()
 	self:Clear()
 
@@ -233,7 +252,7 @@ function PANEL:Rebuild()
 					return
 				end
 
-				self.Changes[key] = valueType
+				self.Changes[key] = value
 			end
 			continue
 		end
@@ -250,7 +269,7 @@ function PANEL:Rebuild()
 			continue
 		end
 
-		hook.Run("SLSettingsAddCustom", panel, key, value)
+		hook.Run("SLSettingsAddCustom", panel, key, value, self)
 	end
 
 	self.Panels = pnls
