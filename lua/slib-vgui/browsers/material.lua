@@ -20,7 +20,7 @@ function PANEL:Init()
 
 	-- self:BuildLayout()
 
-	self:RebuildModels()
+	self:RebuildMaterials()
 end
 
 function PANEL:BuildLayout()
@@ -32,19 +32,21 @@ function PANEL:BuildLayout()
 	self.layout = layout
 end
 
-local function GenerateView(Panel)
-	local PrevMins, PrevMaxs = Panel.Entity:GetRenderBounds()
-	Panel:SetCamPos( PrevMins:Distance(PrevMaxs) * Vector(1, 1, 1) * 0.75)
-	Panel:SetLookAt( (PrevMaxs + PrevMins) / 2)
+local helperMat = Material("osiris_overrides/helper")
+
+local renderClearMat = function(mat)
+	helperMat:SetTexture("$basetexture", mat:GetTexture("$basetexture"))
+	surface.SetMaterial(helperMat)
 end
 
-function PANEL:RebuildModels()
+
+function PANEL:RebuildMaterials()
 	self.scroll:GetCanvas():Clear()
 
 	self:BuildLayout()
 	self.scroll:ScrollToChild(self.layout)
 
-	local mdlPath = self.mdlPath or "models"
+	local mdlPath = self.mdlPath or "materials"
 	local files, folders = file.Find(mdlPath .. "/*", "GAME")
 
 	local up = self.layout:Add("DButton")
@@ -52,7 +54,7 @@ function PANEL:RebuildModels()
 	up:SetSize(100, 100)
 	up.DoClick = function()
 		self.mdlPath = mdlPath:match("(.*)/[^/]*$")
-		self:RebuildModels()
+		self:RebuildMaterials()
 	end
 
 	for _, folder in ipairs(folders) do
@@ -61,36 +63,58 @@ function PANEL:RebuildModels()
 		btn:SetSize(100, 100)
 		btn.DoClick = function()
 			self.mdlPath = mdlPath .. "/" .. folder
-			self:RebuildModels()
+			self:RebuildMaterials()
 		end
 	end
 
 	for _, fileName in ipairs(files) do
-		if fileName:EndsWith(".mdl") then
-			local btn = self.layout:Add("DModelPanel")
-			btn:SetModel(mdlPath .. "/" .. fileName)
+		if fileName:EndsWith(".png") or fileName:EndsWith(".vmt") then
+
+			local usefulName = fileName
+
+			local isVMT = false
+
+			if fileName:EndsWith(".vmt") then
+				usefulName = fileName:sub(1, -5)
+				isVMT = true
+			end
+
+			local btn = self.layout:Add("DButton")
+			btn.mat = mdlPath .. "/" .. usefulName
+			-- remove materials/ from the start
+			btn.mat = btn.mat:sub( 11 )
+
 			btn:SetSize(100, 100)
 			btn.DoClick = function()
-				self:OnSelect(btn:GetModel())
+				self:OnSelect(btn.mat)
 			end
 
-			function btn:LayoutEntity(ent)
-				ent:SetAngles(Angle(0, RealTime() * 10, 0))
-			end
+			local mat = Material(btn.mat)
+			btn.Paint = function(_, w, h)
+				-- disable engine lighting
+				render.SuppressEngineLighting(true)
+				surface.SetDrawColor(255, 255, 255, 255)
 
-			GenerateView(btn)
+				if isVMT then
+					renderClearMat(mat)
+				else
+					surface.SetMaterial(mat)
+				end
+				surface.DrawTexturedRect(0, 0, w, h)
+				render.SuppressEngineLighting(false)
+			end
 
 			local btn2 = btn:Add("DButton")
 			btn2:SetText("")
 			btn2:Dock(FILL)
 			btn2.DoClick = btn.DoClick
-			btn2.Paint = function(self, w, h) 
-				if self.Hovered then
+			btn2.Paint = function(selfBtn, w, h)
+				if selfBtn.Hovered then
 					surface.SetDrawColor(255, 255, 255, 84)
 					surface.DrawRect(0, 0, w, h)
 				end
 
-				if self.Depressed then
+				if selfBtn.Depressed then
 					surface.SetDrawColor(255, 0, 0, 128)
 					surface.DrawRect(0, 0, w, h)
 				end
@@ -99,7 +123,7 @@ function PANEL:RebuildModels()
 	end
 end
 
-vgui.Register("SLModelBrowser", PANEL, "DPanel")
+vgui.Register("SLMaterialBrowser", PANEL, "DPanel")
 
 -- pnl:Rebuild()
 -- pnl:DoModal()

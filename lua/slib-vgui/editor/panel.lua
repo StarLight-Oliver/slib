@@ -141,7 +141,10 @@ function PANEL:Rebuild()
 			local label = panel:Add("DTextEntry")
 			label:Dock(FILL)
 			label:SetText( tostring(value.value))
-			label.OnEnter = function(lab)
+
+			label:SetUpdateOnType(true)
+
+			label.OnValueChange = function(lab)
 				local valueVar = lab:GetText()
 				self.Changes[key] = valueVar
 			end
