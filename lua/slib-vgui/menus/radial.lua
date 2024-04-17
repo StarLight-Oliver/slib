@@ -142,6 +142,12 @@ function CustomRadialMenu:Think()
 	end
 end
 
+local lerp = function(p, a, b)
+	return a + (b - a) * p
+end
+
+
+
 function CustomRadialMenu:AddSegment()
 	local step = 1
 	self.segmentCount = self.segmentCount + 1
@@ -154,12 +160,18 @@ function CustomRadialMenu:AddSegment()
 	button.TestHover = function(btn) return segID == self.selectedSegment end
 	button.DoClick = function() end
 
-	button.SetIcon = function(iconName)
+	button.SetIcon = function(self, iconName)
 		self.icon = Material(iconName)
 	end
+	button.SetMaterial = function(self, mat)
+		print(mat, "mat")
+		self.icon = mat
+	end
+
+	button.hoverProg = 0
 
 	button.Paint = function(self, w, h)
-		surface.SetDrawColor(45, 40, 97, 176)
+		
 		draw.NoTexture()
 		local x, y = w / 2, h / 2
 		local startAng = self.startAng
@@ -171,7 +183,21 @@ function CustomRadialMenu:AddSegment()
 
 		local cacheID = "radialmenu_" .. r .. "_" .. r2 .. "_"  .. segID .. "_" .. startAng .. "_" .. endAng .. "_" .. halfAng .. "_" .. size
 
+
+		local centerX = x + math.cos(math.rad(halfAng)) * (r + r2 / 2)
+		local centerY = y + math.sin(math.rad(halfAng)) * (r + r2 / 2)
+
+		local hoverOffset = 0
+
 		if self.Hovered then
+			self.hoverProg = math.Approach(self.hoverProg or 0, 1, FrameTime() * 10)
+		else
+			self.hoverProg = math.Approach(self.hoverProg or 0, 0, FrameTime() * 10)
+		end
+
+		hoverOffset = -lerp(self.hoverProg, 0, 2)
+
+		if self.Hovered or self.hoverProg != 0 then
 			local mat = matHelper.CreateTexture(cacheID, w, h, function()
 				surface.SetDrawColor(255, 255, 255, 255)
 				draw.NoTexture()
@@ -185,27 +211,27 @@ function CustomRadialMenu:AddSegment()
 			surface.SetDrawColor(255, 255, 255, 10)
 			surface.DrawTexturedRect(0, 0, w, h)
 
-			surface.SetDrawColor(255, 230, 0)
-			local oldSize = size
+			surface.SetDrawColor(255, 210, 0)
+			-- local oldSize = size
 			size = math.ceil(size * 1.1)
 
 			if self.icon then
 				surface.SetMaterial(self.icon)
-				surface.DrawTexturedRect(math.floor(x + math.cos(math.rad(halfAng)) * (r + r2 / 2) - size / 2), math.floor(y + math.sin(math.rad(halfAng)) * (r + r2 / 2) - size / 2), size, size)
+				surface.DrawTexturedRect(math.floor(centerX - size / 2 - hoverOffset), math.floor(centerY - size / 2 - hoverOffset), size, size)
 			else
-				draw.SimpleTextOutlined(self:GetText(), "DermaLarge", x + math.cos(math.rad(halfAng)) * (r + r2 / 2), y + math.sin(math.rad(halfAng)) * (r + r2 / 2), Color(255, 230, 0, 142), TEXT_ALIGN_CENTER, TEXT_ALIGN_CENTER, 1, Color(255, 230, 0, 142))
+				draw.SimpleTextOutlined(self:GetText(), "DermaLarge", centerX, centerY, Color(255, 230, 0, 142), TEXT_ALIGN_CENTER, TEXT_ALIGN_CENTER, 1, Color(255, 230, 0, 142))
 			end
 
-			size = oldSize
+			-- size = oldSize
 		end
 
 		surface.SetDrawColor(255, 255, 255, 255)
 
 		if self.icon then
 			surface.SetMaterial(self.icon)
-			surface.DrawTexturedRect(math.floor(x + math.cos(math.rad(halfAng)) * (r + r2 / 2) - size / 2), math.floor(y + math.sin(math.rad(halfAng)) * (r + r2 / 2) - size / 2), size, size)
+			surface.DrawTexturedRect(math.floor(centerX - size / 2  + hoverOffset), math.floor(centerY - size / 2 + hoverOffset), size, size)
 		else
-			draw.SimpleText(self:GetText(), "DermaLarge", x + math.cos(math.rad(halfAng)) * (r + r2 / 2), y + math.sin(math.rad(halfAng)) * (r + r2 / 2), ColorAlpha(color_white, 150), TEXT_ALIGN_CENTER, TEXT_ALIGN_CENTER)
+			draw.SimpleText(self:GetText(), "DermaLarge", centerX, centerY, ColorAlpha(color_white, 150), TEXT_ALIGN_CENTER, TEXT_ALIGN_CENTER)
 		end
 
 		return true
@@ -233,14 +259,14 @@ end
 
 function CustomRadialMenu:Paint(w, h)
 	if self.segmentCount == 0 then return end
-	local cacheID = "radialmenu_" .. self:GetRadius() .. "_" .. self:GetOuterRadius() .. "_" .. self:GetInnerRadius()
+	local cacheID = "radialmenu_" .. self:GetRadius() .. "_" .. self:GetOuterRadius() .. "_" .. self:GetInnerRadius() .. "_" .. w .. "_" .. h
 	local x, y = w / 2, h / 2
 	local startAng = 0
 	local endAng = 360.5
 	local r = self:GetRadius()
 	local r2 = self:GetOuterRadius()
 	local inner = self:GetInnerRadius()
-	surface.SetDrawColor(45, 40, 97, 176)
+
 	draw.NoTexture()
 
 	local mat = matHelper.CreateTexture(cacheID, w, h, function()
@@ -254,7 +280,7 @@ function CustomRadialMenu:Paint(w, h)
 	})
 
 	surface.SetMaterial(mat)
-	surface.SetDrawColor(45, 40, 97, 176)
+	surface.SetDrawColor(30, 30, 30, 200)
 	surface.DrawTexturedRect(0, 0, w, h)
 	local selectedBtn = self.buttons[self.selectedSegment]
 

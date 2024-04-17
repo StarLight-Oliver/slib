@@ -17,8 +17,29 @@ if SERVER then
 			return
 		end
 
+		local newData = {}
+		local i = 1
+		for k, v in ipairs(data) do
+			local dataType = type(v)
+
+			if dataType == "string" then
+				newData[i] = v
+				i = i + 1
+			elseif dataType == "Player" then
+				newData[i] = team.GetColor(v:GetTeam())
+				newData[i + 1] = v:Nick()
+				i = i + 2
+			elseif (dataType == "table" or dataType == "Color") and IsColor(dataType) then
+				newData[i] = v
+				i = i + 1
+			else
+
+			end
+		end
+
+
 		net.Start("slib_chat")
-		net.WriteTable(data)
+		net.WriteTable(newData)
 
 		if not players then
 			net.Broadcast()

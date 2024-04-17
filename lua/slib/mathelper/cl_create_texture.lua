@@ -13,7 +13,7 @@ function MODULE.CreateTexture(id,w,h,renderfunc,mat,shader)
 	//create the new render target
 
 	//Diffuse
-	local flags = bit.bor(4, 8, 1)
+	local flags = bit.bor(4, 8)
 	local rt = GetRenderTargetEx(name,
 		w, h,
 		RT_SIZE_NO_CHANGE,
