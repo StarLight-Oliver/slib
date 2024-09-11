@@ -5,9 +5,17 @@ if SERVER then
 		Send = function(self, data)
 			net.Start("wisp_internal")
 				net.WriteUInt(self.id, 16)
+				net.WriteBool(false)
 				net.WriteTable(data)
 			net.Send(self.player)
-		end
+		end,
+		Error = function(self, errMsg)
+			net.Start("wisp_internal")
+				net.WriteUInt(self.id, 16)
+				net.WriteBool(true)
+				net.WriteString(errMsg)
+			net.Send(self.player)
+		end,
 	}
 
 	packetMeta.__index = packetMeta
@@ -63,7 +71,7 @@ else
 		wisp.id = wisp.id + 1
 
 		
-		local back = setmetatable({}, backMeta)
+		local back = setmetatable({ name = name}, backMeta)
 		back.__index = back
 
 		wisp.Listeners[id] = back
@@ -80,19 +88,30 @@ else
 	net.Receive("wisp_internal", function(len)
 		local id = net.ReadUInt(16)
 
+		local isErr = net.ReadBool()
+
 		local backer = wisp.Listeners[id]
 
-		if backer and !backer.canncelled then
+		wisp.Listeners[id] = nil
+		if not backer then return end
+
+		if backer.cannceled then return end
+
+		if isErr then
+			local errMsg = net.ReadString()
+			if backer.catchFunc then
+				backer.catchFunc(errMsg)
+			else
+				ErrorNoHalt("wisp: no catch function for " .. backer.name .. " " .. id)
+			end
+		else
 			local data = net.ReadTable()
-			
 			if backer.thenFunc then
 				backer.thenFunc(data)
 			else
-				ErrorNoHalt("wisp: no then function for " .. name .. " " .. id)
+				ErrorNoHalt("wisp: no then function for " .. backer.name .. " " .. id)
 			end
 		end
-		
-		wisp.Listeners[id] = nil
 	end)
 end
 
